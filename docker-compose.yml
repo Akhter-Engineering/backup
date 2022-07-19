@@ -35,13 +35,13 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      BACKUP_APP_NAME: 'testapp'
-      BACKUP_CRON_EXPRESSION: '* * * * *'
-      BACKUP_AWS_ACCESS_KEY_ID: 'set-me'
-      BACKUP_AWS_SECRET_ACCESS_KEY: 'set-me'
-      BACKUP_AWS_BUCKET_NAME: 'set-me'
-      BACKUP_SLACK_API_TOKEN: 'set-me'
-      BACKUP_SLACK_CHANNEL: '#infra-backup'
+      APP_NAME: 'testapp'
+      CRON_EXPRESSION: '* * * * *'
+      AWS_ACCESS_KEY_ID: 'set-me'
+      AWS_SECRET_ACCESS_KEY: 'set-me'
+      AWS_BUCKET_NAME: 'set-me'
+      SLACK_API_TOKEN: 'set-me'
+      SLACK_CHANNEL: '#infra-backup'
       POSTGRES_HOST: 'local-postgres'
       POSTGRES_DB: 'db-name'
       POSTGRES_USER: 'db-user'

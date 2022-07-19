@@ -23,3 +23,5 @@ COPY src/* $ROOT/
 RUN chmod +x $ROOT/start.sh
 
 ENV PATH="$ROOT:$PATH"
+
+CMD ["start.sh"]

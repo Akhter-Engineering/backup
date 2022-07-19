@@ -34,7 +34,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: start.sh
     environment:
       BACKUP_APP_NAME: 'testapp'
       BACKUP_CRON_EXPRESSION: '* * * * *'

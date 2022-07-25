@@ -13,6 +13,7 @@ from slack.errors import SlackApiError
 
 
 BACKUP_APP_NAME = os.getenv('BACKUP_APP_NAME')
+BACKUP_AWS_REGION = os.getenv('BACKUP_AWS_REGION')
 BACKUP_AWS_ACCESS_KEY_ID = os.getenv('BACKUP_AWS_ACCESS_KEY_ID')
 BACKUP_AWS_SECRET_ACCESS_KEY = os.getenv('BACKUP_AWS_SECRET_ACCESS_KEY')
 BACKUP_AWS_BUCKET_NAME = os.getenv('BACKUP_AWS_BUCKET_NAME')
@@ -29,14 +30,14 @@ def get_output_filename():
 
 
 def create_temp_backup_sql(temp_path):
-    os.system('PGPASSWORD=$BACKUP_POSTGRES_PASSWORD pg_dump -h $BACKUP_POSTGRES_HOST -U $BACKUP_POSTGRES_USER $BACKUP_POSTGRES_DB > %s' % temp_path)
+    os.system('PGPASSWORD=$BACKUP_POSTGRES_PASSWORD pg_dump -h $BACKUP_POSTGRES_HOST -p $BACKUP_POSTGRES_PORT -U $BACKUP_POSTGRES_USER $BACKUP_POSTGRES_DB > %s' % temp_path)
 
 
 def upload_temp_backup_sql_into_s3(source, output):
     conn = boto.s3.connect_to_region(
-        'eu-west-1',
-        aws_access_key_id = BACKUP_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key = BACKUP_AWS_SECRET_ACCESS_KEY
+        BACKUP_AWS_REGION,
+        aws_access_key_id=BACKUP_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=BACKUP_AWS_SECRET_ACCESS_KEY,
     )
     bucket = conn.get_bucket(BACKUP_AWS_BUCKET_NAME)
     k = Key(bucket)

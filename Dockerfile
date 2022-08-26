@@ -15,6 +15,7 @@ RUN apk update \
 
 RUN pip install boto
 RUN pip install slackclient
+RUN pip install PyYAML
 
 # Add files
 COPY src/* $ROOT/

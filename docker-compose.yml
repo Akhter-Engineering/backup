@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 networks:
   local-network: {}
@@ -23,9 +23,9 @@ services:
     volumes:
       - local-postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: 'db-name'
-      POSTGRES_USER: 'db-user'
-      POSTGRES_PASSWORD: 'db-pass'
+      POSTGRES_DB: "db-name"
+      POSTGRES_USER: "db-user"
+      POSTGRES_PASSWORD: "db-pass"
 
   local-backup-postgresql:
     <<: *base-image
@@ -34,17 +34,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - ./data:/backup/data
     environment:
-      BACKUP_APP_NAME: 'testapp'
-      BACKUP_CRON_EXPRESSION: '* * * * *'
-      BACKUP_AWS_REGION: 'set-me'
-      BACKUP_AWS_ACCESS_KEY_ID: 'set-me'
-      BACKUP_AWS_SECRET_ACCESS_KEY: 'set-me'
-      BACKUP_AWS_BUCKET_NAME: 'set-me'
-      BACKUP_SLACK_API_TOKEN: 'set-me'
-      BACKUP_SLACK_CHANNEL: '#infra-backup'
-      BACKUP_POSTGRES_HOST: 'local-postgres'
-      BACKUP_POSTGRES_PORT: '5432'
-      BACKUP_POSTGRES_DB: 'db-name'
-      BACKUP_POSTGRES_USER: 'db-user'
-      BACKUP_POSTGRES_PASSWORD: 'db-pass'
+      BACKUP_APP_NAME: "testapp"
+      BACKUP_CRON_EXPRESSION: "* * * * *"
+      BACKUP_AWS_REGION: "set-me"
+      BACKUP_AWS_ACCESS_KEY_ID: "set-me"
+      BACKUP_AWS_SECRET_ACCESS_KEY: "set-me"
+      BACKUP_AWS_BUCKET_NAME: "set-me"
+      BACKUP_SLACK_API_TOKEN: "set-me"
+      BACKUP_SLACK_CHANNEL: "#infra-backup"
+      BACKUP_POSTGRES_HOST: "local-postgres"
+      BACKUP_POSTGRES_PORT: "5432"
+      BACKUP_POSTGRES_DB: "db-name"
+      BACKUP_POSTGRES_USER: "db-user"
+      BACKUP_POSTGRES_PASSWORD: "db-pass"

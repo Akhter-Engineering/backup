@@ -6,6 +6,7 @@ import logging
 import yaml
 import shlex
 import boto
+import shutil
 
 from typing import List
 from abc import ABC, abstractmethod
@@ -248,6 +249,116 @@ class PostgreSQLTarget(Target):
             raise e
 
 
+class FileTarget(Target):
+
+    def __init__(
+        self,
+        filepath: str,
+        storages: List[Storage],
+        notifiers: List[Notifier],
+        environment: Environment,
+        namespace: str,
+    ):
+        super(FileTarget, self).__init__(storages, notifiers, environment, namespace)
+        self.filepath = filepath
+    
+    def get_output_filename(self):
+        filename = os.path.basename(self.filepath)
+        if self.namespace is not None:
+            prefix_name = '%s_%s' % (self.environment.APP_NAME, self.namespace)
+        else:
+            prefix_name = self.environment.APP_NAME
+        return '%s_%s' % (prefix_name, filename)
+
+    def backup(self):
+        logger.info("FileTarget -> backup")
+        app_name = self.environment.APP_NAME
+
+        try:
+            output_filename = self.get_output_filename()
+
+            for storage in self.storages:
+                storage.upload(self.filepath, output_filename)
+
+                for notifier in self.notifiers:
+                    notifier.notify(
+                        ":green_heart: Created a file backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
+                    )
+
+        except Exception as e:
+            for notifier in self.notifiers:
+                notifier.notify(
+                    ":broken_heart: Error: `%s` ```%s```" % (app_name, e),
+                )
+            raise e
+
+
+class Target:
+    
+    def __init__(self, storages: List[Storage], notifiers: List[Notifier], environment: Environment, namespace: str):
+        self.storages = storages
+        self.notifiers = notifiers
+        self.environment = environment
+        self.namespace = namespace
+
+    @abstractmethod
+    def backup(self, text):
+        pass
+
+
+class DirectoryTarget(Target):
+
+    def __init__(
+        self,
+        dirpath: str,
+        storages: List[Storage],
+        notifiers: List[Notifier],
+        environment: Environment,
+        namespace: str,
+    ):
+        super(DirectoryTarget, self).__init__(storages, notifiers, environment, namespace)
+        self.dirpath = dirpath
+    
+    def get_output_filename(self):
+        if self.namespace is not None:
+            prefix_name = '%s_%s' % (self.environment.APP_NAME, self.namespace)
+        else:
+            prefix_name = self.environment.APP_NAME
+        return '%s_%s.zip' % (prefix_name, datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ'))
+
+    def create_archive(self, filepath: str):
+        logger.info("DirectoryTarget -> create_archive('%s')" % filepath)
+        filename, _ = os.path.splitext(filepath)
+        parent_dir = os.path.dirname(self.dirpath)
+        relative_dir = os.path.basename(self.dirpath)
+        return shutil.make_archive(filename, 'zip', root_dir=parent_dir, base_dir=relative_dir)
+
+    def backup(self):
+        logger.info("DirectoryTarget -> backup")
+        app_name = self.environment.APP_NAME
+
+        try:
+            output_filename = self.get_output_filename()
+            archive_path = '/tmp/%s' % output_filename
+
+            path = self.create_archive(archive_path)
+
+            for storage in self.storages:
+                storage.upload(path, output_filename)
+
+                for notifier in self.notifiers:
+                    notifier.notify(
+                        ":green_heart: Created a directory backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
+                    )
+
+        except Exception as e:
+            for notifier in self.notifiers:
+                notifier.notify(
+                    ":broken_heart: Error: `%s` ```%s```" % (app_name, e),
+                )
+            raise e
+
+
 class TargetBuilder:
 
     def __init__(self, builder_config: dict, environment: Environment, namespace: str = None):
@@ -274,6 +385,22 @@ class TargetBuilder:
     def build_target_from_config(self, target_config: dict, storages: List[Storage], notifiers: List[Notifier]):
         if target_config.get('type') == 'postgresql':
             return PostgreSQLTarget(
+                **(target_config.get('params')),
+                storages=storages,
+                notifiers=notifiers,
+                environment=self.environment,
+                namespace=self.namespace,
+            )
+        elif target_config.get('type') == 'file':
+            return FileTarget(
+                **(target_config.get('params')),
+                storages=storages,
+                notifiers=notifiers,
+                environment=self.environment,
+                namespace=self.namespace,
+            )
+        elif target_config.get('type') == 'directory':
+            return DirectoryTarget(
                 **(target_config.get('params')),
                 storages=storages,
                 notifiers=notifiers,

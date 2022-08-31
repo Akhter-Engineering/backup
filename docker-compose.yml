@@ -27,10 +27,10 @@ services:
       POSTGRES_USER: "db-user"
       POSTGRES_PASSWORD: "db-pass"
 
-  local-backup-postgresql:
+  local-backup:
     <<: *base-image
-    image: local-backup-postgresql
-    hostname: local-backup-postgresql
+    image: local-backup
+    hostname: local-backup
     build:
       context: .
       dockerfile: Dockerfile

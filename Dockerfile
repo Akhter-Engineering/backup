@@ -13,9 +13,11 @@ RUN apk update \
     && pip3 install --no-cache --upgrade pip setuptools wheel \
     && if [ ! -e /usr/bin/pip ]; then ln -s pip /usr/bin/pip ; fi
 
-RUN pip install boto
+RUN pip install boto3
 RUN pip install slackclient
 RUN pip install PyYAML
+RUN pip install requests
+
 
 # Add files
 COPY src/* $ROOT/

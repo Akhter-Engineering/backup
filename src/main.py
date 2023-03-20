@@ -5,15 +5,14 @@ import os
 import logging
 import yaml
 import shlex
-import boto
+import boto3
 import shutil
+import requests
 
 from typing import List
 from abc import ABC, abstractmethod
 
 from datetime import datetime
-
-from boto.s3.key import Key
 
 from slack import WebClient
 from slack.errors import SlackApiError
@@ -122,15 +121,14 @@ class AWSStorage(Storage):
 
     def upload(self, source: str, output: str):
         logger.info("AWSStorage -> upload('%s', '%s')" % (source, output))
-        conn = boto.s3.connect_to_region(
-            self.aws_region,
+        s3 = boto3.resource(
+            's3',
+            region_name=self.aws_region,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        bucket = conn.get_bucket(self.aws_bucket_name)
-        k = Key(bucket)
-        k.key = output
-        k.set_contents_from_filename(source)
+        bucket = s3.Bucket(self.aws_bucket_name)
+        bucket.upload_file(source, output)
 
     def describe(self):
         return '(AWS region: %s, S3 Bucket: %s)' % (self.aws_region, self.aws_bucket_name)
@@ -169,6 +167,32 @@ class SlackNotifier(Notifier):
             except SlackApiError as e:
                 # You will get a SlackApiError if "ok" is False
                 assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+
+
+class TelegramNotifier(Notifier):
+
+    def __init__(
+        self,
+        chat_ids: List[str],
+        bot_token: str,
+        environment: Environment,
+        namespace: str,
+    ):
+        super(TelegramNotifier, self).__init__(environment, namespace)
+        self.chat_ids = chat_ids
+        self.bot_token = bot_token
+
+    def notify(self, text: str):
+        logger.info("TelegramNotifier -> notify('%s')" % text)
+        for chat_id in self.chat_ids:
+            url = "https://api.telegram.org/bot%(bot_token)s/sendMessage?chat_id=%(chat_id)s&text=%(text)s" % {
+                'bot_token': self.bot_token,
+                'chat_id': chat_id,
+                'text': text,
+            }
+            resp = requests.get(url).json()
+            if not resp['ok']:
+                assert resp
 
 
 class Target:
@@ -238,13 +262,13 @@ class PostgreSQLTarget(Target):
 
                 for notifier in self.notifiers:
                     notifier.notify(
-                        ":green_heart: Created a postgresql backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
+                        "💚 Created a postgresql backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
                     )
 
         except Exception as e:
             for notifier in self.notifiers:
                 notifier.notify(
-                    ":broken_heart: Error: `%s` ```%s```" % (app_name, e),
+                    "💔 Error: `%s` ```%s```" % (app_name, e),
                 )
             raise e
 
@@ -282,13 +306,13 @@ class FileTarget(Target):
 
                 for notifier in self.notifiers:
                     notifier.notify(
-                        ":green_heart: Created a file backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
+                        "💚 Created a file backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
                     )
 
         except Exception as e:
             for notifier in self.notifiers:
                 notifier.notify(
-                    ":broken_heart: Error: `%s` ```%s```" % (app_name, e),
+                    "💔 Error: `%s` ```%s```" % (app_name, e),
                 )
             raise e
 
@@ -348,13 +372,13 @@ class DirectoryTarget(Target):
 
                 for notifier in self.notifiers:
                     notifier.notify(
-                        ":green_heart: Created a directory backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
+                        "💚 Created a directory backup `%s` for application `%s` in storage `%s`" % (output_filename, app_name, storage.describe()),
                     )
 
         except Exception as e:
             for notifier in self.notifiers:
                 notifier.notify(
-                    ":broken_heart: Error: `%s` ```%s```" % (app_name, e),
+                    "💔 Error: `%s` ```%s```" % (app_name, e),
                 )
             raise e
 
@@ -377,6 +401,12 @@ class TargetBuilder:
     def build_notifier_from_config(self, notifier_config: dict):
         if notifier_config.get('type') == 'slack':
             return SlackNotifier(
+                **(notifier_config.get('params')),
+                environment=self.environment,
+                namespace=self.namespace,
+            )
+        elif notifier_config.get('type') == 'telegram':
+            return TelegramNotifier(
                 **(notifier_config.get('params')),
                 environment=self.environment,
                 namespace=self.namespace,

@@ -238,7 +238,7 @@ class PostgreSQLTarget(Target):
 
     def create_temp_backup_sql(self, path: str):
         logger.info("PostgreSQLTarget -> create_temp_backup_sql('%s')" % path)
-        os.system('PGPASSWORD=%(postgres_password)s pg_dump -h %(postgres_host)s -p %(postgres_port)s -U %(postgres_user)s %(postgres_db)s > %(path)s' % {
+        exit_code = os.system('PGPASSWORD=%(postgres_password)s pg_dump --no-owner --no-privileges -h %(postgres_host)s -p %(postgres_port)s -U %(postgres_user)s %(postgres_db)s -f %(path)s -F plain' % {
             'path': shlex.quote(path),
             'postgres_host': shlex.quote(self.postgres_host),
             'postgres_port': shlex.quote(self.postgres_port),
@@ -246,6 +246,8 @@ class PostgreSQLTarget(Target):
             'postgres_user': shlex.quote(self.postgres_user),
             'postgres_password': shlex.quote(self.postgres_password),
         })
+        if exit_code != 0:
+            raise Exception("pg_dump failed with the exit code: %s" % exit_code)
 
     def backup(self):
         logger.info("PostgreSQLTarget -> backup")

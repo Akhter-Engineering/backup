@@ -8,6 +8,7 @@ import shlex
 import boto3
 import shutil
 import requests
+import shutil
 
 from typing import List
 from abc import ABC, abstractmethod
@@ -67,23 +68,20 @@ class Config:
 
             'storages': [
                 {
-                    'type': "aws",
+                    'type': "local",
                     'params': {
-                        'aws_bucket_name': os.getenv('BACKUP_AWS_BUCKET_NAME'),
-                        'aws_region': os.getenv('BACKUP_AWS_REGION'),
-                        'aws_access_key_id': os.getenv('BACKUP_AWS_ACCESS_KEY_ID'),
-                        'aws_secret_access_key': os.getenv('BACKUP_AWS_SECRET_ACCESS_KEY'),
+                        'backup_path': os.getenv('BACKUP_PATH'),
                     }
                 }
             ],
 
             'notifiers': [
                 {
-                    'type': "slack",
+                    'type': "telegram",
                     'params': {
-                        'slack_api_token': os.getenv('BACKUP_SLACK_API_TOKEN'),
-                        'slack_channels': [
-                            os.getenv('BACKUP_SLACK_CHANNEL'),
+                        'slack_api_token': os.getenv('bot_token'),
+                        'chat_ids': [
+                            os.getenv('chat_ids'),
                         ]
                     }
                 }
@@ -133,6 +131,23 @@ class AWSStorage(Storage):
     def describe(self):
         return '(AWS region: %s, S3 Bucket: %s)' % (self.aws_region, self.aws_bucket_name)
 
+class LocalStorage(Storage):
+
+    def __init__(
+        self,
+        backup_path: str,
+        environment: Environment,
+        namespace: str,
+    ):
+        super(LocalStorage, self).__init__(environment, namespace)
+        self.backup_path = backup_path
+
+    def upload(self, source: str, output: str):
+        logger.info("LocalStorage -> upload('%s', '%s')" % (source, output))    
+        shutil.copyfile(source, self.backup_path + '/' + output)
+
+    def describe(self):
+        return '(Backup path: %s)' % (self.backup_path)
 
 class Notifier:
     
@@ -395,6 +410,12 @@ class TargetBuilder:
     def build_storage_from_config(self, storage_config: dict):
         if storage_config.get('type') == 'aws':
             return AWSStorage(
+                **(storage_config.get('params')),
+                environment=self.environment,
+                namespace=self.namespace,
+            )
+        elif storage_config.get('type') == 'local':
+            return LocalStorage(
                 **(storage_config.get('params')),
                 environment=self.environment,
                 namespace=self.namespace,

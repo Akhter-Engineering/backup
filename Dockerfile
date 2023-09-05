@@ -11,7 +11,7 @@ RUN apk update \
     && python -m ensurepip \
     && rm -r /usr/lib/python*/ensurepip \
     && pip3 install --no-cache --upgrade pip setuptools wheel \
-    && if [ ! -e /usr/bin/pip ]; then ln -s pip /usr/bin/pip ; fi
+    && if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 
 RUN pip install boto3
 RUN pip install slackclient

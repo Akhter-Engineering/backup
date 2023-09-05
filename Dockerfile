@@ -1,4 +1,4 @@
-FROM postgres:14.4-alpine3.16
+FROM postgres:15.4-alpine3.18
 
 ENV ROOT /main
 

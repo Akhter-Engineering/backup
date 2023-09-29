@@ -1,30 +1,46 @@
-FROM postgres:15.4-alpine3.18
+ARG PYTHON_VERSION
 
-ENV ROOT /main
+FROM --platform=linux/amd64 python:$PYTHON_VERSION AS base
+
+## Base setup
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONFAULTHANDLER 1
+ENV PYTHONUNBUFFERED 1
+ENV ROOT /app
+ENV PYTHONPATH "${PYTHONPATH}:/app/src/"
 
 WORKDIR $ROOT
 
-RUN apk update \
-    && apk add gzip \
-    && apk add --no-cache python3 \
-    && if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi \
-    && python -m ensurepip \
-    && rm -r /usr/lib/python*/ensurepip \
-    && pip3 install --no-cache --upgrade pip setuptools wheel \
-    && if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends build-essential \
+  && apt-get install -y --no-install-recommends apt-utils \
+  && apt-get install -y --no-install-recommends libc-dev \
+  && apt-get install -y --no-install-recommends gcc \
+  && apt-get install -y --no-install-recommends gettext \
+  && apt-get install -y --no-install-recommends postgresql-client
 
-RUN pip install boto3
-RUN pip install slackclient
-RUN pip install PyYAML
-RUN pip install requests
+# Install poetry
+RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry
 
+# Poetry configs
+RUN poetry config virtualenvs.create false
 
-# Add files
-COPY src/* $ROOT/
+# Install packages
+COPY pyproject.toml poetry.lock $ROOT/
+RUN poetry install --no-root --no-dev
 
-# Add start script
-RUN chmod +x $ROOT/start.sh
+# Add commands
+COPY devops/commands $ROOT/commands
+RUN chmod +x $ROOT/commands/*
+ENV PATH="$ROOT/commands:$PATH"
 
-ENV PATH="$ROOT:$PATH"
+ADD src $ROOT/src
 
-CMD ["start.sh"]
+WORKDIR $ROOT/src
+
+ENTRYPOINT [ "entrypoint.sh" ]
+CMD [ "start.sh" ]

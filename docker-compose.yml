@@ -34,10 +34,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+      args:
+        - PYTHON_VERSION=3.10
+    platform: linux/amd64
     volumes:
       - ./data:/backup/data
     environment:
-      BACKUP_APP_NAME: "nss"
+      BACKUP_APP_NAME: "infra"
       BACKUP_CRON_EXPRESSION: "* * * * *"
       BACKUP_USE_CONFIG: "on"
       BACKUP_CONFIG: |
@@ -50,5 +55,8 @@ services:
               postgres_db: "db-name"
               postgres_user: "db-user"
               postgres_password: "db-pass"
-          storages: []
+          storages:
+          - type: local
+            params:
+              backup_path: "/backup/data"
           notifiers: []

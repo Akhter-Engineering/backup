@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "backup"
+version = "0.1.0"
+description = ""
+authors = ["Azamat <azamat@akhter.global>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+boto3 = "^1.28.57"
+slackclient = "^2.9.4"
+pyyaml = "^6.0.1"
+requests = "^2.31.0"
+schedule = "^1.2.0"
+pre-commit = "^3.4.0"
+mypy = "^1.5.1"
+croniter = "^1.4.1"
+paramiko = "^3.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

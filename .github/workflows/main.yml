@@ -33,6 +33,6 @@ jobs:
             PYTHON_VERSION=3.10
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/backup:$${{ env.VERSION }},${{ secrets.DOCKER_HUB_USERNAME }}/backup:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/backup:${{ env.VERSION }},${{ secrets.DOCKER_HUB_USERNAME }}/backup:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/backup:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/backup:buildcache,mode=max

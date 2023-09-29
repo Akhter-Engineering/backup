@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION
 
-FROM --platform=linux/amd64 python:$PYTHON_VERSION AS base
+FROM python:$PYTHON_VERSION AS base
 
 ## Base setup
 ENV LANG C.UTF-8

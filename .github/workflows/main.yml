@@ -26,6 +26,8 @@ jobs:
         with:
           context: ./
           file: ./Dockerfile
+          build-args: |
+            PYTHON_VERSION=3.10
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/backup:${{github.ref_name}},${{ secrets.DOCKER_HUB_USERNAME }}/backup:latest

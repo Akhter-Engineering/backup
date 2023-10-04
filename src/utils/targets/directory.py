@@ -9,6 +9,7 @@ from utils.functions import retry_if_exception_for_method
 from utils.notifiers.base import Notifier
 from utils.storages.base import Storage
 from utils.targets.base import Target
+from utils.io import delete_file_if_exists
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +50,14 @@ class DirectoryTarget(Target):
         logger.info("DirectoryTarget -> backup")
         app_name = self.environment.APP_NAME
 
-        try:
-            output_filename = self.get_output_filename()
-            archive_path = '/tmp/%s' % output_filename
+        output_filename = self.get_output_filename()
+        temp_path = '/tmp/%s' % output_filename
 
-            path = self.create_archive(archive_path)
+        try:
+            self.create_archive(temp_path)
 
             for storage in self.storages:
-                storage.upload(path, output_filename)
+                storage.upload(temp_path, output_filename)
 
                 for notifier in self.notifiers:
                     notifier.notify(
@@ -69,3 +70,5 @@ class DirectoryTarget(Target):
                     "💔 Error: `%s` ```%s```" % (app_name, e),
                 )
             raise e
+        finally:
+            delete_file_if_exists(temp_path)

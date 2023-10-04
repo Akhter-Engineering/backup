@@ -9,6 +9,7 @@ from utils.functions import retry_if_exception_for_method
 from utils.notifiers.base import Notifier
 from utils.storages.base import Storage
 from utils.targets.base import Target
+from utils.io import delete_file_if_exists
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +64,10 @@ class PostgreSQLTarget(Target):
         logger.info("PostgreSQLTarget -> backup")
         app_name = self.environment.APP_NAME
 
-        try:
-            output_filename = self.get_output_filename()
-            temp_path = '/tmp/%s' % output_filename
+        output_filename = self.get_output_filename()
+        temp_path = '/tmp/%s' % output_filename
 
+        try:
             self.create_temp_backup_sql(temp_path)
 
             for storage in self.storages:
@@ -83,3 +84,5 @@ class PostgreSQLTarget(Target):
                     "💔 Error: `%s` ```%s```" % (app_name, e),
                 )
             raise e
+        finally:
+            delete_file_if_exists(temp_path)

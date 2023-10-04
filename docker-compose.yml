@@ -16,21 +16,10 @@ x-base-image: &base-image
       max-file: "3"
 
 services:
-  local-postgres:
+  local-autobackup:
     <<: *base-image
-    image: "postgres:14.1-alpine"
-    hostname: local-postgres
-    volumes:
-      - local-postgres-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: "db-name"
-      POSTGRES_USER: "db-user"
-      POSTGRES_PASSWORD: "db-pass"
-
-  local-backup:
-    <<: *base-image
-    image: local-backup
-    hostname: local-backup
+    image: local-autobackup
+    hostname: local-autobackup
     build:
       context: .
       dockerfile: Dockerfile
@@ -39,8 +28,6 @@ services:
       args:
         - PYTHON_VERSION=3.10
     platform: linux/amd64
-    volumes:
-      - ./data:/backup/data
     environment:
       BACKUP_APP_NAME: "infra"
       BACKUP_CRON_EXPRESSION: "* * * * *"
@@ -50,13 +37,22 @@ services:
           target:
             type: postgresql
             params:
-              postgres_host: "local-postgres"
-              postgres_port: "5432"
-              postgres_db: "db-name"
-              postgres_user: "db-user"
-              postgres_password: "db-pass"
+              postgres_host: ""
+              postgres_port: ""
+              postgres_db: ""
+              postgres_user: ""
+              postgres_password: ""
           storages:
-          - type: local
+          - type: remote
             params:
-              backup_path: "/backup/data"
-          notifiers: []
+              ssh_username: ""
+              ssh_password: ""
+              ssh_host: ""
+              ssh_port: ""
+              remote_dir_path: ""
+          notifiers:
+          - type: telegram
+            params:
+              chat_ids:
+              - []
+              bot_token: ""
